@@ -75,7 +75,7 @@ import ast
 import argparse
 from re import L
 parser = argparse.ArgumentParser()
-parser.add_argument('-file', help="File to pass")
+parser.add_argument('-file', help="File to pass") # to handle command line arguments
 args = parser.parse_args()
 # print(args.file.readlines())
 input_file = open(args.file, 'r')
