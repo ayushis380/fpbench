@@ -1,3 +1,11 @@
+import ast
+from lib2to3.pytree import Node
+import sys
+import argparse
+import array
+from re import L
+from tokenize import String
+
 def compile_op(op):
     if isinstance(op, ast.Lt):
         return "<"
@@ -15,7 +23,7 @@ def resolve_fun(n):
         if n.value.id == 'math':
             return n.attr
         else:
-            raise NotImplemented()
+            raise NotImplementedError("Not Implemented")
 
 def compile_expr(n):
     s=""
@@ -71,46 +79,56 @@ def compile_expr(n):
         s+=n.id
     return s
 
-import ast
-import argparse
-from re import L
-parser = argparse.ArgumentParser()
-parser.add_argument('-file', help="File to pass") # to handle command line arguments
-args = parser.parse_args()
-# print(args.file.readlines())
-input_file = open(args.file, 'r')
-line = ""
-for l in input_file:
-    line += l
-
-node = ast.parse(line)
-# print(ast.dump(node, indent=2))
-import array
-listArgs=[] # to store the argument values
-s = "(FPCore ("
-s += " ".join([
-    item.arg
-    for item
-    in node.body[0].args.args
-])
-s+=')\n  '
-end= ""
-for n in node.body[0].body:
-    if isinstance(n, ast.Expr):
-        s+=compile_expr(n.value)
-    if isinstance(n, ast.Assign):
-        s+="(let* (["
-        s+= ",".join([
-            item.id
+def parse_main(node):
+    # node = ast.parse(line)
+    # print(node)
+    # print(ast.dump(node, indent=2))
+    if isinstance(node, ast.FunctionDef) and node.name != 'fmin' and node.name != 'fmax':
+        # s = "(FPCore " + node.body[0].name + "("
+        s = "(FPCore " + node.name + "("
+        s += " ".join([
+            item.arg
             for item
-            in n.targets
+            # in node.body[0].args.args
+            in node.args.args
         ])
-        s+=" "
-        s+=compile_expr(n.value)
-        s+="]) "
-        end+=")"
-    if isinstance(n, ast.Return):
-        s+=compile_expr(n.value)
-s+=end
-s+=')'
-print(s)
+        s+=')\n  '
+        end= ""
+        # for n in node.body[0].body:
+        for n in node.body:
+            if isinstance(n, ast.Expr):
+                s+=compile_expr(n.value)
+            if isinstance(n, ast.Assign):
+                s+="(let* (["
+                s+= ",".join([
+                    item.id
+                    for item
+                    in n.targets
+                ])
+                s+=" "
+                s+=compile_expr(n.value)
+                s+="]) "
+                end+=")"
+            if isinstance(n, ast.Return):
+                s+=compile_expr(n.value)
+        s+=end
+        s+=')'
+        print(s)
+    elif isinstance(node, ast.Import) and  node.names[0].name == 'math':
+        raise NotImplementedError("import math - is NotImplemented")
+    else:
+        raise NotImplementedError("Other code - NotImplemented")
+
+
+# parser = argparse.ArgumentParser()
+# parser.add_argument('file',type=str, help="File to pass") # to handle command line arguments
+# args = parser.parse_args()
+# print(args.file.readlines())
+# print(sys.argv)
+input_file = open(sys.argv[1], 'r')
+final_str= "" # to store the contents of the file
+for l in input_file:
+    final_str+= l
+node= ast.parse(final_str)
+for i in node.body:
+    parse_main(i)
